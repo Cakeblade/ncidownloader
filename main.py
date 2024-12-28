@@ -38,10 +38,12 @@ def make_env():
 
 def paste(str):
     try:
+        tmp = pyperclip.paste()
         pyperclip.copy(str)
         action = ActionChains(driver)
         action.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
         time.sleep(random.randint(0, 2) + random.random())
+        pyperclip.copy(tmp)
         
     except:
         print("paste")
@@ -73,8 +75,13 @@ def login():
 
 def get_image():
     try:
+        global flag
         print("URL : ", end='')
         url = input()
+
+        if 'exit' == url:
+            flag = False
+            return
 
         if 'cafe.naver.com/' not in url:
             print("Error")
@@ -102,14 +109,16 @@ def get_image():
 
 def download_image(url, path):
     try:
+        global download_path
         filename = str(url).split('/')[-1]
         response = requests.get(url)
         if response.status_code == 200:
             with (open(download_path + path + "\\" + filename, 'wb')) as file:
                 file.write(response.content)
         else:
-            print("Error", end='')
+            print("Error")
             print(response)
+            
     except:
         print("download_image")
         return
@@ -118,14 +127,18 @@ def download_image(url, path):
 def main():
     try:
         global flag
+
         imgs = get_image()
+        if flag is False:
+            return
+        
         date = str(now.date()) + "-" + str(now.hour) + str(now.minute) + str(now.second)
         if not os.path.isdir(download_path + date + "\\"):
             os.mkdir(download_path + date + "\\");
         
         print("Download Start...")
 
-        if args.no_thread:
+        if not args.thread:
             # Download One by One
             for img in tqdm(imgs, desc='Downloaded Images', total=len(imgs)):
                 download_image(img, date)
@@ -155,6 +168,7 @@ def main():
                 return
             
     except:
+        print("main")
         flag = False
         return
 
@@ -165,7 +179,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', help=' : Running debug mode', default=False)
     parser.add_argument('--headless', help=' : Running headless mode', default=True)
     parser.add_argument('--setenv', help=' : Setting .env', default=False)
-    parser.add_argument('--no_thread', help=' : Not using thread', default=False)
+    parser.add_argument('--thread', help=' : Using thread', default=True)
     args = parser.parse_args()
 
     if args.setenv:
@@ -184,6 +198,9 @@ if __name__ == '__main__':
         make_env()
 
     print("Starting...")
+
+    if not os.path.isdir(os.getcwd() + "\\download"):
+        os.mkdir(os.getcwd() + "\\download")
 
     options = Options()
     if not args.debug:
